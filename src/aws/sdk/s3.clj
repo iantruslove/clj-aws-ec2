@@ -7,6 +7,7 @@
             [clj-time.core :as t]
             [clj-time.coerce :as coerce]
             [clojure.walk :as walk])
+
   (:import com.amazonaws.auth.BasicAWSCredentials
            com.amazonaws.services.s3.AmazonS3Client
            com.amazonaws.AmazonServiceException
@@ -103,7 +104,7 @@
   "Set an attribute on an object if not nil."
   {:private true}
   [object setter value]
-  `(if-let [v# ~value]
+  `(clojure.core/if-let [v# ~value]
      (~setter ~object v#)))
 
 (defn- map->ObjectMetadata
