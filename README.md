@@ -22,7 +22,7 @@ Add the following dependency to your `project.clj` file:
 
 ## Documentation
 
-* [API docs](http://iantruslove.github.com/clj-aws-ec2/)
+None as yet.  Sorry.
 
 ## License
 
