@@ -8,7 +8,24 @@
   (:import com.amazonaws.auth.BasicAWSCredentials
            com.amazonaws.services.ec2.AmazonEC2Client
            com.amazonaws.regions.Region
-           com.amazonaws.regions.Regions))
+           com.amazonaws.regions.Regions
+           com.amazonaws.services.ec2.model.SpotPrice)
+  (:require [clj-time.format :as format]
+            [clj-time.coerce :as coerce]))
+
+(defprotocol Mappable
+             "Convert a value into a Clojure map."
+             (to-map [x] "Return a map of the value."))
+
+(extend-protocol Mappable
+  SpotPrice
+  (to-map [spot-price]
+    {:availability-zone (.getAvailabilityZone spot-price)
+     :instance-type     (.getInstanceType spot-price)
+     :product-description (.getProductDescription spot-price)
+     :spot-price (.getSpotPrice spot-price)
+     :timestamp (format/unparse (format/formatters :date-time) (coerce/from-date (.getTimestamp spot-price)))
+     }))
 
 (defn- get-region
   "Returns the AWS region corresponding to the keyword or string passed"
@@ -38,3 +55,11 @@
   [cred region]
   (throw (UnsupportedOperationException. "Not implemented"))
   )
+
+;; (defn describe-spot-price-history)
+
+
+
+
+
+
