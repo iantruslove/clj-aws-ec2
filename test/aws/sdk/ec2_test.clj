@@ -10,11 +10,30 @@
 
 (def us_east_1 (Region/getRegion Regions/US_EAST_1))
 
-(deftest ec2-test
+(deftest private-helpers
   (testing "regions are accessible with keywords"
     (let [get-region #'ec2/get-region]
       (is (= us_east_1 (get-region :US_EAST_1)))))
-  )
+
+  (testing "creation of SpotPriceHistoryRequests"
+    (let [get-spot-price-history-request #'ec2/get-spot-price-history-request
+          params {
+                  :availability-zone "us-east-1a"
+                  :end-time "2010-01-03T00:00:00.000Z"
+                  ;:filters
+                  ;:instance-types
+                  :max-results 10
+                  :next-token "ahPY8+qAPr" 
+                  ;:product-descriptions "some description"
+                  :start-time "2010-01-02T00:00:00.000Z"
+                  }
+          spotPriceHistoryRequest (get-spot-price-history-request params)]
+      (is (= (:availability-zone params)    (.getAvailabilityZone spotPriceHistoryRequest)))
+      (is (= (:end-time params)             (date-to-string (.getEndTime spotPriceHistoryRequest))))
+      (is (= (:max-results params)          (.getMaxResults spotPriceHistoryRequest)))
+      (is (= (:start-time params)           (date-to-string (.getStartTime spotPriceHistoryRequest))))
+      (is (= (:next-token params)           (.getNextToken spotPriceHistoryRequest)))
+      )))
 
 (deftest mappables
   (testing "SpotPrice is mappable"

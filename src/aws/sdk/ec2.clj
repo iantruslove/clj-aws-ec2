@@ -9,7 +9,8 @@
            com.amazonaws.services.ec2.AmazonEC2Client
            com.amazonaws.regions.Region
            com.amazonaws.regions.Regions
-           com.amazonaws.services.ec2.model.SpotPrice)
+           com.amazonaws.services.ec2.model.SpotPrice
+           com.amazonaws.services.ec2.model.DescribeSpotPriceHistoryRequest)
   (:require [clj-time.format :as format]
             [clj-time.coerce :as coerce]))
 
@@ -17,15 +18,25 @@
              "Convert a value into a Clojure map."
              (to-map [x] "Return a map of the value."))
 
+(defn date-to-string
+  "Converts a java.util.Date to a nice ISO 8601 time"
+  [date]
+  (format/unparse (format/formatters :date-time)
+                  (coerce/from-date date)))
+
+(defn string-to-date
+  "Converts a nice ISO 8601 time to a java.util.Date"
+  [iso]
+  (coerce/to-date (format/parse (format/formatters :date-time) iso)))
+
 (extend-protocol Mappable
   SpotPrice
   (to-map [spot-price]
-    {:availability-zone (.getAvailabilityZone spot-price)
-     :instance-type     (.getInstanceType spot-price)
+    {:availability-zone   (.getAvailabilityZone spot-price)
+     :instance-type       (.getInstanceType spot-price)
      :product-description (.getProductDescription spot-price)
-     :spot-price (.getSpotPrice spot-price)
-     :timestamp (format/unparse (format/formatters :date-time) (coerce/from-date (.getTimestamp spot-price)))
-     }))
+     :spot-price          (.getSpotPrice spot-price)
+     :timestamp           (date-to-string (.getTimestamp spot-price))}))
 
 (defn- get-region
   "Returns the AWS region corresponding to the keyword or string passed"
@@ -38,9 +49,7 @@
     (BasicAWSCredentials. access-key secret-key)))
 
 (defn- create-client*
-  "Create an EC2 Client for a specific region.
-
-  Region is a keyword such as :US_EAST_1, :US_WEST_2, etc."
+  "Create an EC2 Client for a specific region."
   [cred region]
   (let [client (AmazonEC2Client. (with-credentials cred))]
     (.setRegion client (get-region region))
@@ -56,10 +65,27 @@
   (throw (UnsupportedOperationException. "Not implemented"))
   )
 
-;; (defn describe-spot-price-history)
+(defn get-spot-price-history-request
+  [params]
+  (let [request (DescribeSpotPriceHistoryRequest.)]
+    (doseq [[k v] params]
+      (cond
+       (= :availability-zone k) (.setAvailabilityZone request v)
+       (= :max-results k)       (.setMaxResults request (int v))
+       (= :start-time k)        (.setStartTime request (string-to-date v))
+       (= :end-time k)          (.setEndTime request (string-to-date v))
+       (= :next-token k)        (.setNextToken request v)
+       ))
+    request))
 
-
-
-
-
-
+(defn describe-spot-price-history
+  "params can contain:
+   :availability-zone
+   :end-time
+   :max-results
+   :start-time"
+  ([cred region]
+     (describe-spot-price-history cred region {}))
+  ([cred region params]
+     (let [client (create-client cred region)]
+       (.describeSpotPriceHistory client (get-spot-price-history-request params)))))
